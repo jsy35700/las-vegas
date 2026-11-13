@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LAS VEGAS · Midnight Velvet Lounge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Ambient Lounge Background & Particle FX Canvas -->
+  <div class="lounge-bg" aria-hidden="true">
+    <div class="lounge-spotlight"></div>
+    <div class="lounge-felt-noise"></div>
+  </div>
+  <canvas id="fx-canvas" aria-hidden="true"></canvas>
+
+  <!-- Top Navigation Bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button id="btn-logo-home" class="brand-btn" title="메인 로비로">
+        <span class="brand-dice-icon" aria-hidden="true">⚄</span>
+        <span class="brand-text">
+          <span class="brand-title">LAS VEGAS</span>
+          <span class="brand-sub">MIDNIGHT LOUNGE</span>
+        </span>
+      </button>
+      <span id="mode-pill" class="pill pill-subtle hidden"></span>
+    </div>
+
+    <div id="topbar-center" class="topbar-center hidden">
+      <div class="round-badge">
+        <span class="round-label">ROUND</span>
+        <span id="hud-round" class="round-num">1 / 4</span>
+      </div>
+      <div id="hud-turn-banner" class="turn-banner">게임 준비 중...</div>
+      <div id="hud-timer-wrap" class="timer-pill hidden">
+        <span class="timer-dot"></span>
+        <span id="hud-timer-val">30s</span>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="audio-controls" role="group" aria-label="사운드 설정">
+        <button id="btn-bgm-toggle" class="icon-pill active" title="라운지 음악 켜기/끄기">
+          <span class="pill-ico">🍸</span>
+          <span class="pill-lbl">LOUNGE</span>
+        </button>
+        <button id="btn-track-switch" class="icon-pill track-pill" title="BGM 스타일 전환 (Nu-Jazz / Deep House)">
+          <span id="track-label">Nu-Jazz</span>
+        </button>
+        <button id="btn-sfx-toggle" class="icon-pill active" title="효과음 켜기/끄기">
+          <span class="pill-ico">🔊</span>
+        </button>
+      </div>
+      <button id="btn-rules" class="icon-pill" title="게임 규칙">
+        <span>?</span>
+        <span class="hide-sm">규칙</span>
+      </button>
+      <button id="btn-leave-game" class="icon-pill danger hidden" title="방 나가기">
+        <span>나가기</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport -->
+  <main id="app-root">
+    <!-- SCREEN 1: ENTRANCE / HOME -->
+    <section id="screen-home" class="screen active">
+      <div class="hero-marquee">
+        <div class="marquee-crest">
+          <span class="crest-line"></span>
+          <span class="crest-badge">HIGH ROLLER EDITION</span>
+          <span class="crest-line"></span>
+        </div>
+        <h1 class="hero-title">LAS VEGAS</h1>
+        <p class="hero-subtitle">
+          주사위의 행운과 날카로운 심리전이 교차하는 네온 스트립의 밤.<br />
+          단독 1위를 차지하거나, 라이벌을 동점으로 상쇄시켜 판을 뒤집으세요!
+        </p>
+      </div>
+
+      <div class="home-profile-bar glass-panel">
+        <div class="profile-field">
+          <label for="input-nickname">닉네임</label>
+          <input id="input-nickname" type="text" maxlength="16" placeholder="플레이어 이름" value="하이롤러" />
+        </div>
+        <div class="profile-field">
+          <label>선호 주사위 색상</label>
+          <div id="home-color-picker" class="color-swatches"></div>
+        </div>
+      </div>
+
+      <div class="mode-grid">
+        <!-- Online Multiplayer Card -->
+        <article class="mode-card glass-panel featured">
+          <div class="mode-card-head">
+            <span class="mode-tag online-tag" id="ws-status-badge">서버 연결 확인 중...</span>
+            <h2>온라인 멀티플레이</h2>
+            <p>실시간 웹소켓 룸으로 친구들과 함께 플레이하세요. 초대 링크 공유 & AI 봇 합류 가능.</p>
+          </div>
+          <div class="mode-card-body">
+            <div class="online-actions">
+              <button id="btn-create-room" class="btn btn-gold btn-lg">
+                <span>✨ 새 VIP 방 만들기</span>
+              </button>
+              <div class="join-row">
+                <input id="input-room-code" type="text" maxlength="6" placeholder="방 코드 (예: VEGAS)" />
+                <button id="btn-join-room" class="btn btn-outline">입장</button>
+              </div>
+            </div>
+            <details class="server-url-box" id="server-url-details">
+              <summary>외부/배포 서버 URL 직접 연결 (HTML 단독 실행 시)</summary>
+              <div class="server-url-row">
+                <input id="input-ws-url" type="text" placeholder="wss://your-app.onrender.com" />
+                <button id="btn-connect-ws" class="btn btn-sm btn-outline">연결</button>
+              </div>
+            </details>
+          </div>
+        </article>
+
+        <!-- Solo vs AI Card -->
+        <article class="mode-card glass-panel">
+          <div class="mode-card-head">
+            <span class="mode-tag offline-tag">HTML 오프라인 즉시 작동</span>
+            <h2>싱글 · AI 대전</h2>
+            <p>서버 없이 HTML만으로 바로 즐기는 스마트 AI 하이롤러들과의 4라운드 승부.</p>
+          </div>
+          <div class="mode-card-body">
+            <div class="option-row">
+              <label for="solo-ai-count">AI 상대 수</label>
+              <select id="solo-ai-count">
+                <option value="1">1명 (2인 + 중립주사위)</option>
+                <option value="2">2명 (총 3인)</option>
+                <option value="3" selected>3명 (총 4인 추천)</option>
+                <option value="4">4명 (총 5인)</option>
+              </select>
+            </div>
+            <div class="option-row">
+              <label for="solo-neutral-mode">중립(하우스) 주사위</label>
+              <select id="solo-neutral-mode">
+                <option value="auto" selected>자동 (2인일 때 4개)</option>
+                <option value="on">항상 사용 (3~4인 2개)</option>
+                <option value="off">끄기</option>
+              </select>
+            </div>
+            <label class="toggle-check">
+              <input type="checkbox" id="solo-big-die" />
+              <span>👑 왕주사위 옵션 (1개는 2개 가치)</span>
+            </label>
+            <button id="btn-start-solo" class="btn btn-neon btn-lg">🎲 AI 대전 시작</button>
+          </div>
+        </article>
+
+        <!-- Local Pass & Play Card -->
+        <article class="mode-card glass-panel">
+          <div class="mode-card-head">
+            <span class="mode-tag offline-tag">한 화면 다인용</span>
+            <h2>로컬 패스 & 플레이</h2>
+            <p>한 기기를 번갈아 보며 최대 5명이 오프라인으로 함께 즐기는 파티 모드.</p>
+          </div>
+          <div class="mode-card-body">
+            <div class="option-row">
+              <label for="local-player-count">참여 인원</label>
+              <select id="local-player-count">
+                <option value="2">2명 (+중립 주사위)</option>
+                <option value="3" selected>3명</option>
+                <option value="4">4명</option>
+                <option value="5">5명</option>
+              </select>
+            </div>
+            <label class="toggle-check">
+              <input type="checkbox" id="local-big-die" />
+              <span>👑 왕주사위 옵션 (1개는 2개 가치)</span>
+            </label>
+            <button id="btn-start-local" class="btn btn-outline btn-lg">🥂 패스 & 플레이 시작</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: ONLINE LOBBY -->
+    <section id="screen-lobby" class="screen">
+      <div class="lobby-layout">
+        <div class="lobby-main glass-panel">
+          <div class="lobby-header">
+            <div>
+              <span class="lobby-eyebrow">VIP LOUNGE ROOM</span>
+              <div class="room-code-display">
+                <span id="lobby-room-code">-----</span>
+                <button id="btn-copy-invite" class="btn btn-sm btn-gold">초대 링크 복사</button>
+              </div>
+            </div>
+            <div class="lobby-host-actions">
+              <button id="btn-lobby-add-ai" class="btn btn-sm btn-outline">+ AI 봇 추가</button>
+              <button id="btn-lobby-ready" class="btn btn-sm btn-outline hidden">준비 완료</button>
+              <button id="btn-lobby-start" class="btn btn-gold hidden">🎲 게임 시작</button>
+            </div>
+          </div>
+
+          <div class="lobby-section-title">플레이어 좌석 (<span id="lobby-count">0</span> / 5)</div>
+          <div id="lobby-player-list" class="lobby-players"></div>
+
+          <div class="lobby-options-box">
+            <div class="lobby-section-title">테이블 규칙 설정</div>
+            <div class="lobby-options-grid">
+              <div class="option-row">
+                <label for="lobby-opt-neutral">중립(하우스) 주사위</label>
+                <select id="lobby-opt-neutral">
+                  <option value="auto">자동 (2인일 때 4개)</option>
+                  <option value="on">켜기 (3~4인 2개)</option>
+                  <option value="off">끄기</option>
+                </select>
+              </div>
+              <div class="option-row">
+                <label for="lobby-opt-timer">턴 제한 시간</label>
+                <select id="lobby-opt-timer">
+                  <option value="0">제한 없음</option>
+                  <option value="30">30초</option>
+                  <option value="45">45초</option>
+                  <option value="60">60초</option>
+                </select>
+              </div>
+              <label class="toggle-check">
+                <input type="checkbox" id="lobby-opt-bigdie" />
+                <span>👑 왕주사위 (Big Die x2)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <aside class="lobby-chat glass-panel">
+          <div class="lobby-section-title">라운지 채팅</div>
+          <div id="lobby-chat-messages" class="chat-feed"></div>
+          <form id="lobby-chat-form" class="chat-input-row">
+            <input id="lobby-chat-input" type="text" maxlength="120" placeholder="메시지 입력..." />
+            <button type="submit" class="btn btn-sm btn-gold">전송</button>
+          </form>
+        </aside>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: CASINO TABLE (GAMEPLAY) -->
+    <section id="screen-game" class="screen">
+      <!-- Players HUD Strip -->
+      <div id="players-strip" class="players-strip"></div>
+
+      <!-- Payout Ceremony Banner (shown non-destructively during round settlement) -->
+      <div id="payout-banner" class="payout-banner hidden">
+        <div class="payout-banner-inner glass-panel">
+          <span class="payout-badge">ROUND SETTLEMENT</span>
+          <span id="payout-banner-text">카지노 정산 중...</span>
+          <button id="btn-skip-payout" class="btn btn-sm btn-outline">건너뛰기 ▶</button>
+        </div>
+      </div>
+
+      <!-- 6 Strip Casinos Grid -->
+      <div id="casinos-grid" class="casinos-grid"></div>
+
+      <!-- Bottom Velvet Dice Pit & Controls -->
+      <div class="dice-console glass-panel">
+        <div class="console-side console-left">
+          <div class="emote-bar" id="emote-bar" title="빠른 리액션">
+            <button class="emote-btn" data-emote="🍀">🍀</button>
+            <button class="emote-btn" data-emote="🍸">🍸</button>
+            <button class="emote-btn" data-emote="🔥">🔥</button>
+            <button class="emote-btn" data-emote="😱">😱</button>
+            <button class="emote-btn" data-emote="💰">💰</button>
+            <button class="emote-btn" data-emote="😎">😎</button>
+          </div>
+          <button id="btn-toggle-drawer" class="btn btn-sm btn-outline">
+            💬 기록 / 채팅 <span id="chat-unread-dot" class="unread-dot hidden"></span>
+          </button>
+        </div>
+
+        <div class="console-center">
+          <div id="dice-pit" class="dice-pit">
+            <div id="dice-pit-prompt" class="dice-pit-prompt">주사위 굴리기 대기 중</div>
+            <div id="dice-pit-content" class="dice-pit-content"></div>
+          </div>
+          <div class="console-actions">
+            <button id="btn-roll-dice" class="btn btn-gold btn-roll hidden">
+              <span class="roll-ico">🎲</span>
+              <span>주사위 굴리기</span>
+              <kbd>Space</kbd>
+            </button>
+          </div>
+        </div>
+
+        <div class="console-side console-right">
+          <div class="deck-status">
+            <span class="deck-label">남은 지폐 덱</span>
+            <span id="hud-deck-count" class="deck-count">54장</span>
+          </div>
+          <div id="neutral-legend" class="neutral-legend hidden">
+            <span class="legend-chip neutral-dot"></span>
+            <span>백색 = 하우스(중립)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Floating Emote Toast Container -->
+  <div id="emote-toast-layer" class="emote-toast-layer" aria-live="polite"></div>
+
+  <!-- Slide-out Log & Chat Drawer -->
+  <aside id="game-drawer" class="game-drawer glass-panel">
+    <div class="drawer-header">
+      <h3>테이블 로그 & 채팅</h3>
+      <button id="btn-close-drawer" class="icon-pill">✕</button>
+    </div>
+    <div id="game-log-feed" class="drawer-feed"></div>
+    <form id="game-chat-form" class="chat-input-row">
+      <input id="game-chat-input" type="text" maxlength="120" placeholder="채팅 보내기..." />
+      <button type="submit" class="btn btn-sm btn-gold">전송</button>
+    </form>
+  </aside>
+
+  <!-- Rules Modal -->
+  <div id="modal-rules" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <h2>🎰 라스베가스 공식 보드게임 규칙</h2>
+        <button class="icon-pill modal-close" data-close="modal-rules">✕</button>
+      </div>
+      <div class="modal-body rules-body">
+        <div class="rule-block">
+          <h3>1. 게임 목표</h3>
+          <p>총 <strong>4라운드</strong> 동안 6개의 카지노(1~6번)에 주사위를 배치해 가장 많은 상금을 획득한 플레이어가 우승합니다!</p>
+        </div>
+        <div class="rule-block">
+          <h3>2. 라운드 준비 & 내 턴 진행</h3>
+          <ul>
+            <li>각 카지노에 합계가 최소 <strong>$50,000 이상</strong>이 될 때까지 지폐가 공개됩니다.</li>
+            <li>내 차례에 남은 주사위를 <strong>모두 굴립니다</strong>.</li>
+            <li>나온 눈금(1~6) 중 <strong>하나의 숫자를 선택</strong>해, 해당 눈금이 나온 주사위 <strong>전부</strong>를 그 번호 카지노에 올립니다.</li>
+            <li>모든 플레이어가 주사위를 소진할 때까지 턴을 번갈아 진행합니다.</li>
+          </ul>
+        </div>
+        <div class="rule-block highlight-rule">
+          <h3>3. 핵심 승부수: 동점 상쇄 (TIE CANCELLATION)!</h3>
+          <p>라운드 종료 시 카지노별로 놓인 주사위 개수를 비교합니다. 이때 <strong>개수가 같은 플레이어들끼리는 서로 상쇄되어 아무것도 받지 못합니다!</strong></p>
+          <p class="rule-example">예: 빨강 3개, 파랑 3개, 초록 2개 → 빨강·파랑은 동점 상쇄! <strong>초록이 어부지리로 1등 상금을 독식합니다!</strong></p>
+          <p>남은 비동점 순위대로 가장 큰 지폐부터 1장씩 가져갑니다.</p>
+        </div>
+        <div class="rule-block">
+          <h3>4. 특수 옵션</h3>
+          <ul>
+            <li><strong>중립(백색) 하우스 주사위</strong>: 2인 게임 기본 규칙(각 4개, 3~4인은 옵션 2개). 선택한 숫자의 내 주사위와 중립 주사위를 <strong>함께</strong> 배치해야 하며, 하우스가 1등/동점이 되면 상금을 빼앗거나 상쇄를 유발합니다!</li>
+            <li><strong>왕주사위 (Big Die)</strong>: 주사위 1개가 크기·무게 모두 <strong>2개</strong>로 계산됩니다.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Podium Modal -->
+  <div id="modal-gameover" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card modal-podium glass-panel">
+      <div class="podium-crest">🏆 GRAND FINALE</div>
+      <h2 id="gameover-title">최종 우승!</h2>
+      <p id="gameover-subtitle" class="gameover-sub"></p>
+      <div id="podium-list" class="podium-list"></div>
+      <div class="podium-actions">
+        <button id="btn-rematch" class="btn btn-gold btn-lg">🎲 한 판 더 하기</button>
+        <button id="btn-back-home" class="btn btn-outline btn-lg">로비로 나가기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Classic non-module scripts so BOTH server HTTP and direct file:// HTML work cleanly -->
+  <script src="engine.js"></script>
+  <script src="audio.js"></script>
+  <script src="fx.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
